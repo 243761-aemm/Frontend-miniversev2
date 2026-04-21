@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Serie } from '@/lib/data'
+import { Serie } from '@/app/lib/data'
 
 interface SerieCardProps {
   serie: Serie

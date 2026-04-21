@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { genres } from '@/lib/data'
+import { genres } from '@/app/lib/data'
 
 interface GenreFilterProps {
   onFilter?: (genre: string) => void
