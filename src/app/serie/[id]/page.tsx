@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Film, Star, Calendar, Monitor, Tag, User, LogOut } from 'lucide-react'
-import { getSerieById, getReviewsBySerieId } from '@/lib/data'
+import { getSerieById, getReviewsBySerieId } from '@/app/lib/data'
 import { notFound } from 'next/navigation'
 
 interface SeriePageProps {

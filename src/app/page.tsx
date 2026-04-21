@@ -3,11 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Film, Search, User, LogOut } from 'lucide-react'
-import { series, genres } from '@/lib/data'
-import SerieCard from '@/components/ui/SerieCard'
-
-// The page shows both logged-out (Image 1) and logged-in (Image 2) states
-// We'll show logged-in by default for demo, with a toggle
+import { series, genres } from '@/app/lib/data'
+import SerieCard from '@/app/components/ui/SerieCard'
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -60,8 +57,8 @@ export default function HomePage() {
 
         {!isLoggedIn ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={() => setIsLoggedIn(true)}
+            <Link
+              href="/login"
               style={{
                 padding: '6px 16px',
                 fontSize: '14px',
@@ -69,12 +66,13 @@ export default function HomePage() {
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
+                textDecoration: 'none',
               }}
             >
               Iniciar sesión
-            </button>
-            <button
-              onClick={() => setIsLoggedIn(true)}
+            </Link>
+            <Link
+              href="/registro"
               style={{
                 padding: '6px 16px',
                 fontSize: '14px',
@@ -83,10 +81,11 @@ export default function HomePage() {
                 border: '1px solid #ffffff',
                 borderRadius: '6px',
                 cursor: 'pointer',
+                textDecoration: 'none',
               }}
             >
               Registrarse
-            </button>
+            </Link>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -129,7 +128,6 @@ export default function HomePage() {
             overflow: 'hidden',
           }}
         >
-          {/* Hero background image */}
           <img
             src="https://image.tmdb.org/t/p/original/56v2KjBlU4XaOv9rVYEQypROD7P.jpg"
             alt="Hero"
@@ -145,7 +143,6 @@ export default function HomePage() {
               t.style.display = 'none'
             }}
           />
-          {/* Dark overlay */}
           <div
             style={{
               position: 'absolute',
@@ -153,8 +150,6 @@ export default function HomePage() {
               background: 'linear-gradient(to right, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0.3) 100%)',
             }}
           />
-
-          {/* Hero text */}
           <div
             style={{
               position: 'absolute',
