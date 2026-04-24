@@ -1,322 +1,262 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Film, Star, Calendar, Monitor, Tag, User, LogOut } from 'lucide-react'
-import { getSerieById, getReviewsBySerieId } from '@/app/lib/data'
-import { notFound } from 'next/navigation'
+import { useParams } from 'next/navigation'
+import { Film, User, LogOut, ChevronDown, ChevronRight, Clock, Play } from 'lucide-react'
+import { seriesApi, seasonsApi, episodesApi, SerieAPI, SeasonAPI, EpisodeAPI } from '@/app/lib/api'
+import { isLoggedIn, getUsuario, logout } from '@/app/lib/auth'
 
-interface SeriePageProps {
-  params: { id: string }
-}
+export default function SeriePage() {
+  const params = useParams()
+  const id = Number(params.id)
 
-export default function SeriePage({ params }: SeriePageProps) {
-  const serie = getSerieById(params.id)
-  if (!serie) notFound()
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [userName, setUserName] = useState('')
 
-  const reviews = getReviewsBySerieId(params.id)
-  const [userRating, setUserRating] = useState(0)
-  const [hoveredRating, setHoveredRating] = useState(0)
-  const [opinion, setOpinion] = useState('')
+  const [serie, setSerie] = useState<SerieAPI | null>(null)
+  const [seasons, setSeasons] = useState<SeasonAPI[]>([])
+  const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, EpisodeAPI[]>>({})
+  const [expandedSeason, setExpandedSeason] = useState<number | null>(null)
 
-  const displayRating = hoveredRating || userRating
+  const [loadingSerie, setLoadingSerie] = useState(true)
+  const [loadingSeasons, setLoadingSeasons] = useState(false)
+  const [loadingEpisodes, setLoadingEpisodes] = useState<number | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const logged = isLoggedIn()
+    setLoggedIn(logged)
+    if (logged) {
+      const u = getUsuario()
+      if (u) setUserName(u.nombre)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!id) return
+    setLoadingSerie(true)
+    seriesApi.getById(id)
+      .then(setSerie)
+      .catch(() => setError('No se pudo cargar la serie.'))
+      .finally(() => setLoadingSerie(false))
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    setLoadingSeasons(true)
+    seasonsApi.getBySerie(id)
+      .then(setSeasons)
+      .catch(() => {})
+      .finally(() => setLoadingSeasons(false))
+  }, [id])
+
+  const handleToggleSeason = async (season: SeasonAPI) => {
+    if (expandedSeason === season.id) {
+      setExpandedSeason(null)
+      return
+    }
+    setExpandedSeason(season.id)
+    if (episodesBySeason[season.id]) return
+    setLoadingEpisodes(season.id)
+    try {
+      const eps = await episodesApi.getBySeason(season.id)
+      setEpisodesBySeason((prev) => ({ ...prev, [season.id]: eps }))
+    } catch {
+    } finally {
+      setLoadingEpisodes(null)
+    }
+  }
+
+  const handleLogout = () => {
+    logout()
+    setLoggedIn(false)
+    setUserName('')
+  }
+
+  if (loadingSerie) {
+    return (
+      <div style={{ backgroundColor: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#52525b', fontSize: '14px' }}>Cargando...</div>
+      </div>
+    )
+  }
+
+  if (error || !serie) {
+    return (
+      <div style={{ backgroundColor: '#0a0a0a', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+        <p style={{ color: '#fca5a5', fontSize: '14px' }}>{error || 'Serie no encontrada'}</p>
+        <Link href="/" style={{ color: '#a1a1aa', fontSize: '13px', textDecoration: 'none' }}>Volver al inicio</Link>
+      </div>
+    )
+  }
 
   return (
     <div style={{ backgroundColor: '#0a0a0a', minHeight: '100vh', color: '#ffffff' }}>
-      {/* NAVBAR */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          backgroundColor: '#0a0a0a',
-          borderBottom: '1px solid #1a1a1a',
-          height: '52px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: 700,
-            fontSize: '16px',
-            color: '#ffffff',
-            textDecoration: 'none',
-          }}
-        >
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        backgroundColor: '#0a0a0a', borderBottom: '1px solid #1a1a1a',
+        height: '52px', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', padding: '0 24px',
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '16px', color: '#ffffff', textDecoration: 'none' }}>
           <Film size={20} />
           Miniverse
         </Link>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <Link
-            href="/perfil"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px',
-              color: '#a1a1aa',
-              textDecoration: 'none',
-            }}
-          >
-            <User size={16} color="#a1a1aa" />
-            aaaa
-          </Link>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center' }}>
-            <LogOut size={16} color="#a1a1aa" />
-          </Link>
+          {loggedIn ? (
+            <>
+              <Link href="/perfil" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#a1a1aa', textDecoration: 'none' }}>
+                <User size={16} color="#a1a1aa" />
+                {userName}
+              </Link>
+              <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                <LogOut size={16} color="#a1a1aa" />
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" style={{ fontSize: '14px', color: '#a1a1aa', textDecoration: 'none' }}>Iniciar sesión</Link>
+              <Link href="/registro" style={{ padding: '6px 14px', fontSize: '13px', color: '#ffffff', border: '1px solid #3f3f46', borderRadius: '6px', textDecoration: 'none' }}>Registrarse</Link>
+            </>
+          )}
         </div>
       </nav>
 
-      {/* HERO BACKDROP */}
       <div style={{ paddingTop: '52px' }}>
-        <div
-          style={{
-            position: 'relative',
-            height: '300px',
-            overflow: 'hidden',
-          }}
-        >
-          <img
-            src={serie.backdropImage || serie.image}
-            alt={serie.title}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              display: 'block',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(10,10,10,0.95) 100%)',
-            }}
-          />
+        <div style={{ position: 'relative', height: '280px', overflow: 'hidden' }}>
+          {serie.imagenUrl ? (
+            <img
+              src={serie.imagenUrl}
+              alt={serie.nombre}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', backgroundColor: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Film size={48} color="#3f3f46" />
+            </div>
+          )}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(10,10,10,1) 100%)' }} />
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div
-        style={{
-          maxWidth: '1100px',
-          margin: '0 auto',
-          padding: '0 24px 48px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 280px',
-          gap: '32px',
-          alignItems: 'start',
-        }}
-      >
-        {/* LEFT COLUMN */}
-        <div>
-          {/* Title */}
-          <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px', marginTop: '24px' }}>
-            {serie.title}
-          </h1>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 24px 64px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', marginTop: '24px' }}>
+          {serie.nombre}
+        </h1>
 
-          {/* Meta info */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              marginBottom: '24px',
-              flexWrap: 'wrap',
-            }}
-          >
-            {/* Rating */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Star size={14} fill="#facc15" color="#facc15" />
-              <span style={{ fontSize: '14px', color: '#facc15', fontWeight: 600 }}>
-                {serie.rating.toFixed(1)}
-              </span>
-              <span style={{ fontSize: '13px', color: '#71717a' }}>
-                ({reviews.length} reseñas)
-              </span>
-            </div>
-
-            {/* Year */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Calendar size={14} color="#71717a" />
-              <span style={{ fontSize: '14px', color: '#a1a1aa' }}>{serie.year}</span>
-            </div>
-
-            {/* Seasons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Monitor size={14} color="#71717a" />
-              <span style={{ fontSize: '14px', color: '#a1a1aa' }}>{serie.seasons} temporadas</span>
-            </div>
-
-            {/* Genres */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Tag size={14} color="#71717a" />
-              <span style={{ fontSize: '14px', color: '#a1a1aa' }}>{serie.genres.join(', ')}</span>
-            </div>
-          </div>
-
-          {/* Synopsis */}
-          <div
-            style={{
-              backgroundColor: '#1a1a1a',
-              borderRadius: '8px',
-              padding: '20px',
-              marginBottom: '32px',
-            }}
-          >
-            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '10px' }}>Sinopsis</h2>
-            <p style={{ fontSize: '14px', color: '#d4d4d8', lineHeight: 1.6 }}>{serie.synopsis}</p>
-          </div>
-
-          {/* Reviews section */}
-          <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>
-            Reseñas de usuarios ({reviews.length})
-          </h2>
-
-          {reviews.length === 0 ? (
-            <p style={{ color: '#71717a', fontSize: '14px' }}>
-              No hay reseñas todavía. ¡Sé el primero en opinar!
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  style={{
-                    backgroundColor: '#1a1a1a',
-                    borderRadius: '8px',
-                    padding: '16px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontWeight: 600, fontSize: '14px' }}>{review.author}</span>
-                      <p style={{ fontSize: '12px', color: '#71717a', marginTop: '2px' }}>
-                        {review.date}
-                      </p>
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px',
-                        backgroundColor: '#2a2a2a',
-                        borderRadius: '4px',
-                        padding: '3px 8px',
-                      }}
-                    >
-                      <Star size={12} fill="#facc15" color="#facc15" />
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{review.rating}</span>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '14px', color: '#d4d4d8', marginTop: '8px', lineHeight: 1.5 }}>
-                    {review.content}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+          {serie.estreno && (
+            <span style={{ fontSize: '13px', color: '#71717a' }}>{serie.estreno}</span>
+          )}
+          {serie.genero?.nombre && (
+            <span style={{
+              fontSize: '12px', color: '#a1a1aa',
+              backgroundColor: '#1e1e1e', borderRadius: '4px', padding: '2px 8px',
+            }}>
+              {serie.genero.nombre}
+            </span>
           )}
         </div>
 
-        {/* RIGHT COLUMN - Write review */}
-        <div style={{ position: 'sticky', top: '72px' }}>
-          <div
-            style={{
-              backgroundColor: '#1a1a1a',
-              borderRadius: '8px',
-              padding: '20px',
-              border: '1px solid #2a2a2a',
-            }}
-          >
-            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>
-              Escribe tu reseña
-            </h3>
-
-            {/* Star rating input */}
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '13px', color: '#a1a1aa', marginBottom: '8px' }}>
-                Tu calificación
-              </p>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill={star <= displayRating ? '#facc15' : 'none'}
-                    stroke={star <= displayRating ? '#facc15' : '#52525b'}
-                    strokeWidth="1.5"
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={() => setHoveredRating(star)}
-                    onMouseLeave={() => setHoveredRating(0)}
-                    onClick={() => setUserRating(star)}
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                ))}
-              </div>
-            </div>
-
-            {/* Opinion textarea */}
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '13px', color: '#a1a1aa', marginBottom: '8px' }}>
-                Tu opinión
-              </p>
-              <textarea
-                placeholder="Cuéntanos qué te pareció esta serie..."
-                value={opinion}
-                onChange={(e) => setOpinion(e.target.value)}
-                rows={5}
-                style={{
-                  width: '100%',
-                  backgroundColor: '#0a0a0a',
-                  border: '1px solid #2a2a2a',
-                  borderRadius: '6px',
-                  padding: '10px 12px',
-                  fontSize: '13px',
-                  color: '#ffffff',
-                  outline: 'none',
-                  resize: 'vertical',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </div>
-
-            {/* Submit button */}
-            <button
-              style={{
-                width: '100%',
-                padding: '10px',
-                backgroundColor: '#3f3f46',
-                color: '#a1a1aa',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              Publicar reseña
-            </button>
+        {serie.sinopsis && (
+          <div style={{ backgroundColor: '#141414', borderRadius: '8px', padding: '16px 20px', marginBottom: '36px', border: '1px solid #1e1e1e' }}>
+            <p style={{ fontSize: '14px', color: '#d4d4d8', lineHeight: 1.65, margin: 0 }}>{serie.sinopsis}</p>
           </div>
+        )}
+
+        <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Temporadas</h2>
+
+        {loadingSeasons && (
+          <div style={{ color: '#52525b', fontSize: '13px', padding: '24px 0' }}>Cargando temporadas...</div>
+        )}
+
+        {!loadingSeasons && seasons.length === 0 && (
+          <div style={{ color: '#52525b', fontSize: '13px', padding: '24px 0' }}>
+            No hay temporadas disponibles aún.
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {seasons.map((season) => {
+            const isOpen = expandedSeason === season.id
+            const episodes = episodesBySeason[season.id] || []
+            const isLoadingEps = loadingEpisodes === season.id
+
+            return (
+              <div key={season.id} style={{ backgroundColor: '#141414', borderRadius: '8px', border: '1px solid #1e1e1e', overflow: 'hidden' }}>
+                <button
+                  onClick={() => handleToggleSeason(season)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 20px', background: 'transparent', border: 'none',
+                    cursor: 'pointer', color: '#ffffff', textAlign: 'left',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {isOpen ? <ChevronDown size={16} color="#71717a" /> : <ChevronRight size={16} color="#71717a" />}
+                    <span style={{ fontSize: '15px', fontWeight: 600 }}>
+                      {season.nombre || `Temporada ${season.numero}`}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#52525b' }}>
+                    {isOpen && episodes.length > 0 ? `${episodes.length} episodios` : ''}
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid #1e1e1e' }}>
+                    {isLoadingEps && (
+                      <div style={{ padding: '16px 20px', color: '#52525b', fontSize: '13px' }}>
+                        Cargando episodios...
+                      </div>
+                    )}
+
+                    {!isLoadingEps && episodes.length === 0 && (
+                      <div style={{ padding: '16px 20px', color: '#52525b', fontSize: '13px' }}>
+                        Sin episodios disponibles.
+                      </div>
+                    )}
+
+                    {!isLoadingEps && episodes.map((ep, idx) => (
+                      <Link
+                        key={ep.id}
+                        href={`/serie/${id}/episodio/${ep.id}`}
+                        style={{ textDecoration: 'none', display: 'block' }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '12px 20px 12px 48px',
+                            borderTop: idx === 0 ? 'none' : '1px solid #1a1a1a',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1a1a1a')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '12px', color: '#52525b', minWidth: '20px' }}>
+                              {ep.numero}
+                            </span>
+                            <Play size={13} color="#52525b" />
+                            <span style={{ fontSize: '13px', color: '#d4d4d8' }}>
+                              {ep.titulo}
+                            </span>
+                          </div>
+                          {ep.duracion ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Clock size={12} color="#52525b" />
+                              <span style={{ fontSize: '12px', color: '#52525b' }}>{ep.duracion} min</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
