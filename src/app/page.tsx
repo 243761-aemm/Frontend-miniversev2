@@ -6,7 +6,24 @@ import { Film, Search, User, LogOut } from 'lucide-react'
 import { seriesApi, SerieAPI } from '@/app/lib/api'
 import { isLoggedIn, getUsuario, logout } from '@/app/lib/auth'
 
-const genres = ['Todas', 'Acción', 'Anime', 'Ciencia Ficción', 'Crimen', 'Drama', 'Fantasía', 'Terror', 'Thriller']
+const GENRE_MAP: Record<number, string> = {
+  1: 'Drama',
+  2: 'Action & Adventure',
+  3: 'Animacion',
+  4: 'Comedia',
+  5: 'Crimen',
+  6: 'Documental',
+  7: 'Familia',
+  8: 'Kids',
+  9: 'Misterio',
+  10: 'News',
+  11: 'Reality',
+  12: 'Sci-Fi & Fantasy',
+  13: 'Soap',
+  14: 'Talk',
+  15: 'War & Politics',
+  16: 'Western',
+}
 
 function SerieCard({ serie }: { serie: SerieAPI }) {
   const [imgError, setImgError] = useState(false)
@@ -14,7 +31,6 @@ function SerieCard({ serie }: { serie: SerieAPI }) {
 
   return (
     <Link href={`/serie/${serie.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-      {/* Poster con aspect-ratio fijo */}
       <div
         style={{
           position: 'relative',
@@ -49,7 +65,6 @@ function SerieCard({ serie }: { serie: SerieAPI }) {
           </div>
         )}
 
-        {/* Año */}
         <div
           style={{
             position: 'absolute', bottom: '6px', left: '6px',
@@ -61,7 +76,6 @@ function SerieCard({ serie }: { serie: SerieAPI }) {
         </div>
       </div>
 
-      {/* Título — altura fija para alinear el grid */}
       <p
         style={{
           margin: '5px 0 0 0', fontSize: '12px', fontWeight: 500,
@@ -96,7 +110,7 @@ export default function HomePage() {
   useEffect(() => {
     seriesApi.getAll()
       .then(setSeries)
-      .catch(() => setError('No se pudieron cargar las series. ¿Está corriendo el backend?'))
+      .catch(() => setError('No se pudieron cargar las series. Esta corriendo el backend?'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -106,9 +120,19 @@ export default function HomePage() {
     setUserName('')
   }
 
-  const filteredSeries = series.filter((s) =>
-    !searchQuery || s.nombre.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const genres = ['Todas', ...Array.from(
+    new Set(series.map((s) => GENRE_MAP[s.idGenero]).filter(Boolean))
+  ).sort()]
+
+  const filteredSeries = series.filter((s) => {
+    const matchesSearch =
+      !searchQuery || s.nombre.toLowerCase().includes(searchQuery.toLowerCase())
+
+    const matchesGenre =
+      activeGenre === 'Todas' || GENRE_MAP[s.idGenero] === activeGenre
+
+    return matchesSearch && matchesGenre
+  })
 
   return (
     <div style={{ backgroundColor: '#0a0a0a', minHeight: '100vh', color: '#ffffff' }}>
@@ -126,7 +150,7 @@ export default function HomePage() {
         {!loggedIn ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <Link href="/login" style={{ padding: '6px 16px', fontSize: '14px', color: '#ffffff', textDecoration: 'none' }}>
-              Iniciar sesión
+              Iniciar sesion
             </Link>
             <Link href="/registro" style={{ padding: '6px 16px', fontSize: '14px', color: '#ffffff', border: '1px solid #ffffff', borderRadius: '6px', textDecoration: 'none' }}>
               Registrarse
@@ -155,10 +179,10 @@ export default function HomePage() {
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.88) 35%, rgba(0,0,0,0.15) 100%)' }} />
           <div style={{ position: 'absolute', bottom: '36px', left: '32px', right: '48%' }}>
             <h1 style={{ fontSize: '26px', fontWeight: 700, lineHeight: 1.25, marginBottom: '10px' }}>
-              Descubre y reseña tus series favoritas
+              Descubre y resena tus series favoritas
             </h1>
             <p style={{ fontSize: '14px', color: '#d4d4d8', lineHeight: 1.5, margin: 0 }}>
-              Comparte tu opinión capítulo por capítulo
+              Comparte tu opinion capitulo por capitulo
             </p>
           </div>
         </div>
@@ -173,7 +197,7 @@ export default function HomePage() {
             <Search size={14} color="#71717a" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               type="text"
-              placeholder="Buscar por título..."
+              placeholder="Buscar por titulo..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -218,20 +242,22 @@ export default function HomePage() {
           {/* Error */}
           {error && !loading && (
             <div style={{ backgroundColor: '#450a0a', border: '1px solid #7f1d1d', borderRadius: '8px', padding: '16px', color: '#fca5a5', fontSize: '14px' }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
-          {/* Vacío */}
+          {/* Vacio */}
           {!loading && !error && filteredSeries.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0', color: '#71717a', fontSize: '14px' }}>
               {series.length === 0
-                ? 'No hay series en el catálogo aún.'
-                : 'No se encontraron series con ese título.'}
+                ? 'No hay series en el catalogo aun.'
+                : activeGenre !== 'Todas'
+                  ? `No hay series en el genero "${activeGenre}".`
+                  : 'No se encontraron series con ese titulo.'}
             </div>
           )}
 
-          {/* Grid — 6 cols, alignItems: start evita que se estiren */}
+          {/* Grid */}
           {!loading && !error && filteredSeries.length > 0 && (
             <div style={{
               display: 'grid',
@@ -248,7 +274,7 @@ export default function HomePage() {
       </div>
 
       <footer style={{ textAlign: 'center', padding: '24px', fontSize: '12px', color: '#3f3f46', borderTop: '1px solid #141414', marginTop: '48px' }}>
-        © 2026 Miniverse
+        2026 Miniverse
       </footer>
 
       <style>{`input::placeholder { color: #52525b; }`}</style>
