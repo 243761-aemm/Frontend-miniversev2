@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MiniVerse - Frontend
 
-## Getting Started
+Interfaz web para la plataforma de reseñas de series por episodio. Construida con Next.js y TypeScript, consume el API del backend para todas las operaciones.
 
-First, run the development server:
+---
+
+## Tecnologías
+
+- Next.js 16 con TypeScript
+- Socket.io client para comentarios en tiempo real
+- Lucide React para iconos
+
+---
+
+## Requisitos
+
+- Node.js 18 o superior
+- Backend de MiniVerse corriendo
+
+---
+
+## Instalación
+
+```bash
+npm install
+
+nom install socket.io
+```
+
+Crear el archivo `.env.local` en la raíz del proyecto:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3100/api
+NEXT_PUBLIC_REALTIME_URL=http://localhost:3008
+```
+
+Iniciar el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La aplicación estará disponible en `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Estructura
 
-## Learn More
+```
+src/app/
+├── components/
+│   ├── layout/       - Navbar y Footer
+│   └── ui/           - Componentes reutilizables
+├── lib/
+│   ├── api.ts        - Cliente HTTP para el backend
+│   ├── auth.ts       - Manejo de sesión y token
+│   └── data.ts       - Tipos y datos estáticos
+├── login/            - Página de inicio de sesión
+├── registro/         - Página de registro
+├── perfil/           - Página de perfil de usuario
+├── serie/[id]/       - Página de detalle de serie
+└── page.tsx          - Página principal
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Variables de entorno
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Descripción |
+|----------|-------------|
+| NEXT_PUBLIC_API_URL | URL base del API Gateway |
+| NEXT_PUBLIC_REALTIME_URL | URL del servicio de Socket.io |
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Funcionalidades
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Catálogo de series con imágenes desde TMDB
+- Búsqueda de series en tiempo real
+- Registro e inicio de sesión
+- Detalle de serie con temporadas y episodios
+- Publicación de reseñas por episodio
+- Comentarios en tiempo real mediante Socket.io
+- Sesión persistente con JWT en localStorage
+
+---
+
+## Despliegue
+
+El proyecto está desplegado en Vercel. Para desplegar una nueva versión basta con hacer push a la rama principal y Vercel lo detecta automáticamente.
+
+Agregar las variables de entorno en el panel de Vercel antes del primer despliegue:
+
+```
+NEXT_PUBLIC_API_URL=https://miniverse-api-gateway.onrender.com/api
+NEXT_PUBLIC_REALTIME_URL=https://miniverse-realtime-service.onrender.com
+```
