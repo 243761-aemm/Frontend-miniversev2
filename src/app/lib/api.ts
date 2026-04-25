@@ -104,6 +104,7 @@ export type EpisodeAPI = {
 }
 
 export const episodesApi = {
+    getById: (id: number) => request<EpisodeAPI>(`/episodes/${id}`),
     getBySeason: (idTemporada: number) =>
         request<EpisodeAPI[]>(`/episodes/season/${idTemporada}`),
     import: (idTemporada: number) =>
